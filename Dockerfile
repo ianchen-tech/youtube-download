@@ -18,7 +18,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 複製應用程式代碼
 COPY app.py .
 COPY templates/ templates/
-COPY static/ static/
 
 # 創建臨時目錄
 RUN mkdir -p /tmp/downloads
