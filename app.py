@@ -14,12 +14,55 @@ from werkzeug.utils import secure_filename
 import threading
 import time
 import uuid
+import re
+from urllib.parse import urlparse, parse_qs
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 # 全域變數來追蹤下載狀態
 download_status = {}
+
+def is_valid_youtube_url(url):
+    """驗證是否為有效的YouTube網址"""
+    if not url or not isinstance(url, str):
+        return False
+    
+    # YouTube URL 模式
+    youtube_patterns = [
+        r'^https?://(www\.)?youtube\.com/watch\?v=[a-zA-Z0-9_-]{11}',
+        r'^https?://(www\.)?youtube\.com/watch\?.*v=[a-zA-Z0-9_-]{11}',
+        r'^https?://youtu\.be/[a-zA-Z0-9_-]{11}',
+        r'^https?://(www\.)?youtube\.com/embed/[a-zA-Z0-9_-]{11}',
+        r'^https?://(www\.)?youtube\.com/v/[a-zA-Z0-9_-]{11}',
+        r'^https?://m\.youtube\.com/watch\?v=[a-zA-Z0-9_-]{11}',
+        r'^https?://music\.youtube\.com/watch\?v=[a-zA-Z0-9_-]{11}'
+    ]
+    
+    # 檢查是否符合任一模式
+    for pattern in youtube_patterns:
+        if re.match(pattern, url.strip()):
+            return True
+    
+    return False
+
+def extract_video_id(url):
+    """從YouTube URL中提取影片ID"""
+    if not url:
+        return None
+    
+    # 各種YouTube URL格式的影片ID提取
+    patterns = [
+        r'(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/v/)([a-zA-Z0-9_-]{11})',
+        r'youtube\.com/watch\?.*v=([a-zA-Z0-9_-]{11})'
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+    
+    return None
 
 class YouTubeDownloader:
     def __init__(self, temp_dir=None):
@@ -196,6 +239,23 @@ def download():
         
         if not url:
             return jsonify({'success': False, 'error': '請提供有效的 YouTube 連結'})
+        
+        # 驗證YouTube網址格式
+        if not is_valid_youtube_url(url):
+            return jsonify({
+                'success': False,
+                'error': '無效的YouTube網址格式',
+                'message': '請確認網址格式正確，支援以下格式：\n• https://www.youtube.com/watch?v=影片ID\n• https://youtu.be/影片ID\n• https://m.youtube.com/watch?v=影片ID'
+            })
+        
+        # 提取影片ID進行額外驗證
+        video_id = extract_video_id(url)
+        if not video_id:
+            return jsonify({
+                'success': False,
+                'error': '無法識別YouTube影片ID',
+                'message': '請檢查網址是否包含有效的影片ID'
+            })
         
         # 生成下載ID
         download_id = str(uuid.uuid4())
