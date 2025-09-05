@@ -271,7 +271,7 @@
                 if (result.success) {
                     currentDownloadId = result.download_id;
                     downloadSection.style.display = 'block';
-                    showAlert('正在準備下載...', 'info');
+                    showAlert('<i class="fas fa-search status-icon"></i>正在搜尋影片資訊...', 'info');
                     startStatusCheck();
                 } else {
                     showAlert(result.error || '下載失敗', 'danger');
@@ -280,7 +280,7 @@
                 showAlert('網路錯誤，請稍後再試', 'danger');
             } finally {
                 downloadBtn.disabled = false;
-                downloadBtn.innerHTML = '<i class="fas fa-download"></i> 開始下載';
+                downloadBtn.innerHTML = '<i class="fas fa-search"></i> 開始搜尋';
             }
         });
         
@@ -315,8 +315,17 @@
             const videoTitle = document.getElementById('videoTitle');
             
             switch (status.status) {
+                case 'processing':
+                case 'extracting':
+                    showAlert('<i class="fas fa-search status-icon"></i>正在分析影片資訊...', 'info');
+                    progressSection.style.display = 'none';
+                    downloadLinkSection.style.display = 'none';
+                    break;
+                    
                 case 'downloading':
-                    showAlert(`<i class="fas fa-download status-icon"></i>正在下載: ${status.title || ''}`, 'info');
+                    showAlert(`🦆 呱呱呱呱呱呱..`, 'info');
+                    // 更新按鈕文字為下載狀態
+                    downloadBtn.innerHTML = '🦆 呱呱呱呱呱呱..';
                     progressSection.style.display = 'block';
                     downloadLinkSection.style.display = 'none';
                     
@@ -334,6 +343,9 @@
                     progressSection.style.display = 'none';
                     downloadLinkSection.style.display = 'block';
                     
+                    // 恢復按鈕為初始狀態
+                    downloadBtn.innerHTML = '<i class="fas fa-search"></i> 開始搜尋';
+                    
                     const downloadLink = document.getElementById('downloadLink');
                     downloadLink.href = `/download_file/${currentDownloadId}`;
                     break;
@@ -342,6 +354,9 @@
                     showAlert(`<i class="fas fa-exclamation-triangle status-icon"></i>下載失敗: ${status.error}`, 'danger');
                     progressSection.style.display = 'none';
                     downloadLinkSection.style.display = 'none';
+                    
+                    // 恢復按鈕為初始狀態
+                    downloadBtn.innerHTML = '<i class="fas fa-search"></i> 開始搜尋';
                     break;
             }
         }
