@@ -96,22 +96,25 @@ class YouTubeDownloader:
             # 隨機延遲 1-3 秒，模擬人類行為
             time.sleep(random.uniform(1, 3))
             
-            # 設定 yt-dlp 選項
+            # 設定 yt-dlp 選項（針對 Cloud Run 優化）
             ydl_opts = {
                 'outtmpl': os.path.join(self.temp_dir, '%(title)s.%(ext)s'),
                 'format': self._get_format_selector(quality, audio_only),
-                # 增強反機器人驗證設定
-                'extractor_retries': 5,
-                'fragment_retries': 5,
-                'file_access_retries': 3,
+                # Cloud Run 環境優化的重試設定
+                'extractor_retries': 3,
+                'fragment_retries': 3,
+                'file_access_retries': 2,
                 'retry_sleep_functions': {
-                    'http': lambda n: min(2 ** n + random.uniform(0, 1), 30),
-                    'fragment': lambda n: min(2 ** n + random.uniform(0, 1), 30)
+                    'http': lambda n: min(2 ** n + random.uniform(0, 1), 15),
+                    'fragment': lambda n: min(2 ** n + random.uniform(0, 1), 15)
                 },
-                # 隨機請求間隔，模擬人類瀏覽行為
-                'sleep_interval': random.uniform(2, 5),
-                'max_sleep_interval': random.uniform(8, 15),
-                'sleep_interval_requests': random.uniform(1, 3),
+                # 適合雲端環境的請求間隔
+                'sleep_interval': random.uniform(3, 6),
+                'max_sleep_interval': random.uniform(10, 20),
+                'sleep_interval_requests': random.uniform(2, 4),
+                # Cloud Run 網路優化
+                'socket_timeout': 30,
+                'source_address': None,
                 # 隨機 User-Agent
                 'http_headers': {
                     'User-Agent': random.choice(self.user_agents),
@@ -122,12 +125,16 @@ class YouTubeDownloader:
                     'Connection': 'keep-alive',
                     'Upgrade-Insecure-Requests': '1'
                 },
-                # 使用多種客戶端策略
+                # Cloud Run 環境優化的客戶端策略
                 'extractor_args': {
                     'youtube': {
-                        'player_client': ['android', 'web', 'ios'],
+                        'player_client': ['android', 'web'],
                         'player_skip': ['configs'],
-                        'include_live_dash': False
+                        'include_live_dash': False,
+                        'skip': ['hls', 'dash'],
+                        'innertube_host': 'www.youtube.com',
+                        'innertube_key': None,
+                        'check_formats': None
                     }
                 },
                 # 避免過於頻繁的請求
@@ -193,7 +200,17 @@ class YouTubeDownloader:
             error_msg = str(e)
             
             # 針對常見錯誤提供更好的錯誤訊息
-            if 'Sign in to confirm you\'re not a bot' in error_msg:
+            if 'Failed to extract any player response' in error_msg:
+                error_msg = (
+                    "YouTube 播放器回應提取失敗。\n"
+                    "建議解決方案：\n"
+                    "1. 檢查影片連結是否正確且可存取\n"
+                    "2. 等待 5-10 分鐘後重試（可能是暫時性問題）\n"
+                    "3. 嘗試使用不同的影片品質設定\n"
+                    "4. 確認影片未被設為私人或地區限制\n"
+                    "5. 如果問題持續，可能是 YouTube 更新了防護機制"
+                )
+            elif 'Sign in to confirm you\'re not a bot' in error_msg:
                 error_msg = (
                     "YouTube 偵測到機器人行為，正在嘗試智能規避。\n"
                     "建議解決方案：\n"

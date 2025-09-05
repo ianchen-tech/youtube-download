@@ -1,4 +1,4 @@
-yt-dlp>=2023.12.30
+yt-dlp>=2025.08.27
 requests>=2.31.0
 colorama>=0.4.6
 Flask>=2.3.0

@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     wget \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && update-ca-certificates
 
 # 複製 requirements.txt 並安裝 Python 依賴
 COPY requirements.txt .
@@ -38,4 +40,4 @@ RUN useradd --create-home --shell /bin/bash app \
 USER app
 
 # 啟動應用程式
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "4", "--timeout", "300", "--keep-alive", "2", "--max-requests", "1000", "--max-requests-jitter", "100", "app:app"]

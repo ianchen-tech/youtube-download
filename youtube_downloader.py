@@ -75,9 +75,10 @@ class YouTubeDownloader:
                 # 使用多種客戶端策略
                 'extractor_args': {
                     'youtube': {
-                        'player_client': ['android', 'web', 'ios'],
+                        'player_client': ['android', 'web', 'ios', 'mweb', 'tv_embedded'],
                         'player_skip': ['configs'],
-                        'include_live_dash': False
+                        'include_live_dash': False,
+                        'skip': ['hls', 'dash']
                     }
                 },
                 # 避免過於頻繁的請求
@@ -115,7 +116,15 @@ class YouTubeDownloader:
             error_msg = str(e)
             
             # 針對常見錯誤提供更好的錯誤訊息
-            if 'Sign in to confirm you\'re not a bot' in error_msg:
+            if 'Failed to extract any player response' in error_msg:
+                print(f"{Fore.RED}下載失敗: YouTube 播放器回應提取失敗{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}解決方案:{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}1. 檢查影片連結是否正確且可存取{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}2. 等待 5-10 分鐘後重試（可能是暫時性問題）{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}3. 嘗試使用不同的影片品質設定{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}4. 確認影片未被設為私人或地區限制{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}5. 如果問題持續，可能是 YouTube 更新了防護機制{Style.RESET_ALL}")
+            elif 'Sign in to confirm you\'re not a bot' in error_msg:
                 print(f"{Fore.RED}下載失敗: YouTube 偵測到機器人行為{Style.RESET_ALL}")
                 print(f"{Fore.YELLOW}解決方案:{Style.RESET_ALL}")
                 print(f"{Fore.YELLOW}1. 等待 5-10 分鐘後重試{Style.RESET_ALL}")
