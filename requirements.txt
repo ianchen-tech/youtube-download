@@ -4,8 +4,3 @@ colorama>=0.4.6
 Flask>=2.3.0
 gunicorn>=21.2.0
 werkzeug>=2.3.0
-# 替代下載方案
-pytube>=15.0.0
-selenium>=4.15.0
-# 可選：如果需要使用瀏覽器下載功能
-# chromedriver-autoinstaller>=0.6.2

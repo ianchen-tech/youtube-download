@@ -1,13 +1,6 @@
 # YouTube 影片下載工具
 
-一個智能的 YouTube 影片下載工具，支援多種下載方法來避免機器人檢測。基於 Python 開發，提供 pytube 和 yt-dlp 兩種下載引擎。
-
-## 🆕 最新功能
-
-- 🤖 **智能模式**：使用 pytube，模擬真人行為，不易被檢測
-- 🔧 **傳統模式**：使用 yt-dlp，功能完整但可能被檢測
-- 🛡️ **防檢測機制**：隨機延遲、真實請求頭、智能重試
-- 🔄 **自動回退**：智能模式失敗時自動切換到傳統模式
+一個簡單易用的 YouTube 影片下載工具，基於 Python 和 yt-dlp 開發。支援命令行和網頁兩種使用方式，可部署到 Google Cloud Run。
 
 ## 功能特色
 
@@ -20,7 +13,6 @@
 - 🌐 現代化網頁介面
 - ☁️ 支援 Cloud Run 部署
 - 🚀 GitHub Actions 自動部署
-- 🤖 多種防機器人檢測方法
 
 ## 系統需求
 
@@ -58,7 +50,7 @@
 
 ## 使用方法
 
-### 🌐 方法一：網頁版（推薦）
+### 方法一：網頁版（推薦）
 
 1. **本地運行**
    ```bash
@@ -67,46 +59,28 @@
    ```
    然後在瀏覽器中打開 `http://localhost:8080`
 
-2. **選擇下載方法**
-   - **智能模式（推薦）**：使用 pytube，更像真人，不易被檢測
-   - **傳統模式**：使用 yt-dlp，功能完整但可能被檢測
-
-3. **Docker 運行**
+2. **Docker 運行**
    ```bash
    docker build -t youtube-downloader .
    docker run -p 8080:8080 youtube-downloader
    ```
 
-### 🤖 方法二：智能模式（命令行）
+### 方法二：互動式使用（命令行）
 
 ```bash
-# 使用智能模式，避免機器人檢測
-python simple_downloader.py
+python download.py
 ```
 
 或者直接提供連結：
 
 ```bash
-python simple_downloader.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+python download.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 ```
 
-### 🌐 方法三：瀏覽器模式（最像真人）
-
-```bash
-# 使用真實瀏覽器下載，需要安裝 Chrome
-python browser_downloader.py
-```
-
-### 🔧 方法四：傳統模式（進階用戶）
+### 方法二：命令行使用（進階用戶）
 
 ```bash
 python youtube_downloader.py "YouTube連結" [選項]
-```
-
-### 📋 方法五：互動式使用
-
-```bash
-python download.py
 ```
 
 #### 命令行選項
@@ -137,117 +111,6 @@ python youtube_downloader.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ" -q 48
 ```bash
 # 下載為 MP3 格式
 python youtube_downloader.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --audio-only
-```
-
-### 自訂輸出目錄
-```bash
-# 指定輸出目錄
-python youtube_downloader.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --output-dir "./downloads"
-```
-
-## 🛡️ 防機器人檢測指南
-
-### 推薦使用順序
-
-1. **智能模式（首選）**：`python simple_downloader.py`
-   - 使用 pytube，模擬真人行為
-   - 隨機延遲，避免被檢測
-   - 適合日常使用
-
-2. **瀏覽器模式（最安全）**：`python browser_downloader.py`
-   - 使用真實瀏覽器，最像真人
-   - 需要安裝 Chrome 瀏覽器
-   - 適合頻繁下載
-
-3. **傳統模式（備用）**：`python youtube_downloader.py`
-   - 功能最完整，但容易被檢測
-   - 僅在其他方法失敗時使用
-
-### 使用建議
-
-- ✅ **間隔下載**：兩次下載間隔至少 30 秒
-- ✅ **避免批量**：不要短時間內下載大量影片
-- ✅ **錯誤重試**：如果失敗，等待 5-10 分鐘後重試
-- ❌ **避免自動化**：不要使用腳本連續下載
-
-## 🔧 故障排除
-
-### 常見錯誤及解決方案
-
-#### 1. 「機器人檢測」錯誤
-```
-解決方案：
-1. 切換到智能模式
-2. 等待 10-15 分鐘後重試
-3. 減少下載頻率
-```
-
-#### 2. pytube 相關錯誤
-```bash
-# 更新 pytube
-pip install --upgrade pytube
-```
-
-#### 3. yt-dlp 相關錯誤
-```bash
-# 更新 yt-dlp
-pip install --upgrade yt-dlp
-```
-
-#### 4. 瀏覽器模式失敗
-```bash
-# 安裝 Chrome 瀏覽器和 ChromeDriver
-# Windows: 下載並安裝 Chrome
-# macOS: brew install --cask google-chrome
-# Linux: sudo apt-get install google-chrome-stable
-```
-
-### 詳細指南
-
-查看 [防機器人檢測完整指南](ANTI_BOT_GUIDE.md) 了解更多技巧和最佳實踐。
-
-## 📦 依賴套件
-
-主要依賴：
-- `flask` - 網頁框架
-- `yt-dlp` - 傳統下載引擎
-- `pytube` - 智能下載引擎
-- `selenium` - 瀏覽器自動化
-- `colorama` - 彩色終端輸出
-- `requests` - HTTP 請求
-
-## 🚀 快速開始
-
-1. **克隆專案並安裝依賴**
-   ```bash
-   git clone https://github.com/your-username/youtube-downloader.git
-   cd youtube-downloader
-   pip install -r requirements.txt
-   ```
-
-2. **啟動網頁版**
-   ```bash
-   python app.py
-   ```
-   在瀏覽器中打開 `http://localhost:8080`
-
-3. **選擇智能模式下載**，避免被檢測為機器人
-
-## 📝 更多範例
-
-### 智能模式範例
-```bash
-# 下載最佳品質影片（智能模式）
-python simple_downloader.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-
-# 只下載音訊（智能模式）
-python simple_downloader.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --audio-only
-```
-
-### 傳統模式範例
-```bash
-# 下載最佳品質影片（傳統模式）
-python youtube_downloader.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
 # 簡寫形式
 python youtube_downloader.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ" -a
