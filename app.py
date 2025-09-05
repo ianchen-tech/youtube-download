@@ -43,6 +43,24 @@ class YouTubeDownloader:
             ydl_opts = {
                 'outtmpl': os.path.join(self.temp_dir, '%(title)s.%(ext)s'),
                 'format': self._get_format_selector(quality, audio_only),
+                # 添加反機器人驗證相關設定
+                'extractor_retries': 3,
+                'fragment_retries': 3,
+                'retry_sleep_functions': {'http': lambda n: min(4 ** n, 60)},
+                # 使用較慢的請求速度避免觸發限制
+                'sleep_interval': 1,
+                'max_sleep_interval': 5,
+                # 設定 User-Agent
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                },
+                # 嘗試使用不同的客戶端
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'web'],
+                        'player_skip': ['configs']
+                    }
+                }
             }
             
             # 如果只下載音訊，設定音訊格式
@@ -101,6 +119,26 @@ class YouTubeDownloader:
                 
         except Exception as e:
             error_msg = str(e)
+            
+            # 針對常見錯誤提供更好的錯誤訊息
+            if 'Sign in to confirm you\'re not a bot' in error_msg:
+                error_msg = (
+                    "YouTube 偵測到機器人行為，請稍後再試。\n"
+                    "建議解決方案：\n"
+                    "1. 等待 5-10 分鐘後重試\n"
+                    "2. 嘗試下載其他影片\n"
+                    "3. 如果問題持續，可能需要使用瀏覽器 cookies"
+                )
+            elif 'HTTP Error 429' in error_msg:
+                error_msg = (
+                    "請求過於頻繁，已觸發 YouTube 限制。\n"
+                    "請等待幾分鐘後再試，或降低下載頻率。"
+                )
+            elif 'Video unavailable' in error_msg:
+                error_msg = "影片無法取得，可能是私人影片、地區限制或已被刪除。"
+            elif 'This video is not available' in error_msg:
+                error_msg = "此影片不可用，可能因版權或地區限制。"
+            
             if download_id:
                 download_status[download_id]['status'] = 'error'
                 download_status[download_id]['error'] = error_msg
