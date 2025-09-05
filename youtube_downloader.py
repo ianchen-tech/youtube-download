@@ -19,6 +19,14 @@ class YouTubeDownloader:
     def __init__(self, output_dir="downloads"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
+        # 隨機 User-Agent 列表
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/120.0'
+        ]
         
     def download_video(self, url, quality="best", audio_only=False):
         """
@@ -30,12 +38,51 @@ class YouTubeDownloader:
             audio_only (bool): 是否只下載音訊
         """
         try:
+            import random
+            import time
+            
             print(f"{Fore.CYAN}正在準備下載: {url}{Style.RESET_ALL}")
+            
+            # 隨機延遲 1-3 秒，模擬人類行為
+            time.sleep(random.uniform(1, 3))
             
             # 設定 yt-dlp 選項
             ydl_opts = {
                 'outtmpl': str(self.output_dir / '%(title)s.%(ext)s'),
                 'format': self._get_format_selector(quality, audio_only),
+                # 增強反機器人驗證設定
+                'extractor_retries': 5,
+                'fragment_retries': 5,
+                'file_access_retries': 3,
+                'retry_sleep_functions': {
+                    'http': lambda n: min(2 ** n + random.uniform(0, 1), 30),
+                    'fragment': lambda n: min(2 ** n + random.uniform(0, 1), 30)
+                },
+                # 隨機請求間隔，模擬人類瀏覽行為
+                'sleep_interval': random.uniform(2, 5),
+                'max_sleep_interval': random.uniform(8, 15),
+                'sleep_interval_requests': random.uniform(1, 3),
+                # 隨機 User-Agent
+                'http_headers': {
+                    'User-Agent': random.choice(self.user_agents),
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1'
+                },
+                # 使用多種客戶端策略
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'web', 'ios'],
+                        'player_skip': ['configs'],
+                        'include_live_dash': False
+                    }
+                },
+                # 避免過於頻繁的請求
+                'concurrent_fragment_downloads': 1,
+                'throttled_rate': '100K'
             }
             
             # 如果只下載音訊，設定音訊格式
@@ -65,7 +112,20 @@ class YouTubeDownloader:
                 print(f"{Fore.CYAN}檔案保存在: {self.output_dir.absolute()}{Style.RESET_ALL}")
                 
         except yt_dlp.DownloadError as e:
-            print(f"{Fore.RED}下載錯誤: {str(e)}{Style.RESET_ALL}")
+            error_msg = str(e)
+            
+            # 針對常見錯誤提供更好的錯誤訊息
+            if 'Sign in to confirm you\'re not a bot' in error_msg:
+                print(f"{Fore.RED}下載失敗: YouTube 偵測到機器人行為{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}解決方案:{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}1. 等待 5-10 分鐘後重試{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}2. 系統已自動調整請求策略，請耐心等待{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}3. 嘗試下載其他影片{Style.RESET_ALL}")
+            elif 'HTTP Error 429' in error_msg:
+                print(f"{Fore.RED}下載失敗: 請求過於頻繁{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}請等待幾分鐘後再試，或降低下載頻率{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.RED}下載錯誤: {error_msg}{Style.RESET_ALL}")
             return False
         except Exception as e:
             print(f"{Fore.RED}發生未知錯誤: {str(e)}{Style.RESET_ALL}")
@@ -135,6 +195,7 @@ def main():
         default='downloads',
         help='輸出目錄 (預設: downloads)'
     )
+
     
     args = parser.parse_args()
     

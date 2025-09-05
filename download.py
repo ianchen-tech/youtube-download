@@ -26,6 +26,8 @@ def main():
         print(f"{Fore.RED}錯誤: 請提供有效的 YouTube 連結{Style.RESET_ALL}")
         return
     
+
+    
     # 詢問下載選項
     print(f"{Fore.YELLOW}下載選項:{Style.RESET_ALL}")
     print("1. 下載影片 (最佳品質)")

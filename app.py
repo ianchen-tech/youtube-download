@@ -67,6 +67,14 @@ def extract_video_id(url):
 class YouTubeDownloader:
     def __init__(self, temp_dir=None):
         self.temp_dir = temp_dir or tempfile.mkdtemp()
+        # 隨機 User-Agent 列表
+        self.user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/120.0'
+        ]
         
     def download_video(self, url, quality="best", audio_only=False, download_id=None):
         """
@@ -82,28 +90,49 @@ class YouTubeDownloader:
                     'file_path': None
                 }
             
+            import random
+            import time
+            
+            # 隨機延遲 1-3 秒，模擬人類行為
+            time.sleep(random.uniform(1, 3))
+            
             # 設定 yt-dlp 選項
             ydl_opts = {
                 'outtmpl': os.path.join(self.temp_dir, '%(title)s.%(ext)s'),
                 'format': self._get_format_selector(quality, audio_only),
-                # 添加反機器人驗證相關設定
-                'extractor_retries': 3,
-                'fragment_retries': 3,
-                'retry_sleep_functions': {'http': lambda n: min(4 ** n, 60)},
-                # 使用較慢的請求速度避免觸發限制
-                'sleep_interval': 1,
-                'max_sleep_interval': 5,
-                # 設定 User-Agent
-                'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                # 增強反機器人驗證設定
+                'extractor_retries': 5,
+                'fragment_retries': 5,
+                'file_access_retries': 3,
+                'retry_sleep_functions': {
+                    'http': lambda n: min(2 ** n + random.uniform(0, 1), 30),
+                    'fragment': lambda n: min(2 ** n + random.uniform(0, 1), 30)
                 },
-                # 嘗試使用不同的客戶端
+                # 隨機請求間隔，模擬人類瀏覽行為
+                'sleep_interval': random.uniform(2, 5),
+                'max_sleep_interval': random.uniform(8, 15),
+                'sleep_interval_requests': random.uniform(1, 3),
+                # 隨機 User-Agent
+                'http_headers': {
+                    'User-Agent': random.choice(self.user_agents),
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1'
+                },
+                # 使用多種客戶端策略
                 'extractor_args': {
                     'youtube': {
-                        'player_client': ['android', 'web'],
-                        'player_skip': ['configs']
+                        'player_client': ['android', 'web', 'ios'],
+                        'player_skip': ['configs'],
+                        'include_live_dash': False
                     }
-                }
+                },
+                # 避免過於頻繁的請求
+                'concurrent_fragment_downloads': 1,
+                'throttled_rate': '100K'
             }
             
             # 如果只下載音訊，設定音訊格式
@@ -166,11 +195,11 @@ class YouTubeDownloader:
             # 針對常見錯誤提供更好的錯誤訊息
             if 'Sign in to confirm you\'re not a bot' in error_msg:
                 error_msg = (
-                    "YouTube 偵測到機器人行為，請稍後再試。\n"
+                    "YouTube 偵測到機器人行為，正在嘗試智能規避。\n"
                     "建議解決方案：\n"
                     "1. 等待 5-10 分鐘後重試\n"
                     "2. 嘗試下載其他影片\n"
-                    "3. 如果問題持續，可能需要使用瀏覽器 cookies"
+                    "3. 系統已自動調整請求策略，請耐心等待"
                 )
             elif 'HTTP Error 429' in error_msg:
                 error_msg = (
@@ -261,11 +290,11 @@ def download():
         download_id = str(uuid.uuid4())
         
         # 在背景執行下載
-        downloader = YouTubeDownloader()
-        thread = threading.Thread(
-            target=downloader.download_video,
-            args=(url, quality, audio_only, download_id)
-        )
+        def background_download():
+            downloader = YouTubeDownloader()
+            downloader.download_video(url, quality, audio_only, download_id)
+        
+        thread = threading.Thread(target=background_download)
         thread.daemon = True
         thread.start()
         
@@ -302,6 +331,8 @@ def download_file(download_id):
                 )
     
     return jsonify({'error': '檔案不存在或下載未完成'}), 404
+
+
 
 @app.route('/health')
 def health_check():

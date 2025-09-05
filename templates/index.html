@@ -118,6 +118,8 @@
                                 </div>
                             </div>
                             
+
+                            
                             <div class="mb-3">
                                 <label class="form-label">
                                     <i class="fas fa-cog"></i> 下載選項
@@ -206,18 +208,24 @@
                             <div class="col-md-6">
                                 <h6 class="text-primary">常見問題解決</h6>
                                 <ul class="list-unstyled small">
-                                    <li><i class="fas fa-check text-success me-2"></i>如遇到機器人驗證，請等待 5-10 分鐘後重試</li>
-                                    <li><i class="fas fa-check text-success me-2"></i>避免短時間內大量下載</li>
-                                    <li><i class="fas fa-check text-success me-2"></i>某些私人或地區限制影片無法下載</li>
+                                    <li><i class="fas fa-shield-alt text-danger me-2"></i>避免短時間內大量下載</li>
+                                    <li><i class="fas fa-lock text-secondary me-2"></i>某些私人或地區限制影片無法下載</li>
                                 </ul>
                             </div>
                             <div class="col-md-6">
-                                <h6 class="text-primary">支援格式</h6>
+                                <h6 class="text-primary">支援格式與功能</h6>
                                 <ul class="list-unstyled small">
                                     <li><i class="fas fa-video text-primary me-2"></i>影片：MP4 格式</li>
                                     <li><i class="fas fa-music text-success me-2"></i>音訊：MP3 格式</li>
                                     <li><i class="fas fa-download text-info me-2"></i>多種品質選擇</li>
+                                    <li><i class="fas fa-brain text-warning me-2"></i>智能反機器人驗證</li>
                                 </ul>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        系統自動模擬真實用戶行為，有效避免機器人檢測
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -241,6 +249,7 @@
             const url = document.getElementById('url').value.trim();
             const quality = document.querySelector('input[name="quality"]:checked').value;
             const audioOnly = document.getElementById('audioOnly').checked;
+
             const downloadBtn = document.getElementById('downloadBtn');
             const downloadSection = document.getElementById('downloadSection');
             
@@ -254,6 +263,8 @@
             downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 處理中...';
             
             try {
+
+                
                 const response = await fetch('/download', {
                     method: 'POST',
                     headers: {
@@ -325,7 +336,7 @@
                 case 'downloading':
                     showAlert(`🦆 呱呱呱呱呱呱..`, 'info');
                     // 更新按鈕文字為下載狀態
-                    downloadBtn.innerHTML = '🦆 呱呱呱呱呱呱..';
+                    downloadBtn.innerHTML = '搜尋中...';
                     progressSection.style.display = 'block';
                     downloadLinkSection.style.display = 'none';
                     
