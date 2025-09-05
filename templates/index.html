@@ -122,6 +122,28 @@
                             
                             <div class="mb-3">
                                 <label class="form-label">
+                                    <i class="fas fa-download"></i> 下載方法
+                                </label>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="quality-option">
+                                            <input type="radio" class="form-check-input" id="pytube" name="method" value="pytube" checked>
+                                            <label class="form-check-label" for="pytube">
+                                                <i class="fas fa-user text-success"></i> 智能模式 (推薦) - 更像真人，不易被檢測
+                                            </label>
+                                        </div>
+                                        <div class="quality-option">
+                                            <input type="radio" class="form-check-input" id="ytdlp" name="method" value="ytdlp">
+                                            <label class="form-check-label" for="ytdlp">
+                                                <i class="fas fa-robot text-warning"></i> 傳統模式 - 功能完整但可能被檢測
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">
                                     <i class="fas fa-cog"></i> 下載選項
                                 </label>
                                 <div class="row">
@@ -242,6 +264,7 @@
             const url = document.getElementById('url').value.trim();
             const quality = document.querySelector('input[name="quality"]:checked').value;
             const audioOnly = document.getElementById('audioOnly').checked;
+            const method = document.querySelector('input[name="method"]:checked').value;
 
             const downloadBtn = document.getElementById('downloadBtn');
             const downloadSection = document.getElementById('downloadSection');
@@ -266,7 +289,8 @@
                     body: JSON.stringify({
                         url: url,
                         quality: quality,
-                        audio_only: audioOnly
+                        audio_only: audioOnly,
+                        method: method
                     })
                 });
                 

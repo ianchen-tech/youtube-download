@@ -15,6 +15,7 @@ import threading
 import time
 import uuid
 import re
+import random
 from urllib.parse import urlparse, parse_qs
 
 app = Flask(__name__)
@@ -63,6 +64,120 @@ def extract_video_id(url):
             return match.group(1)
     
     return None
+
+class SimpleYouTubeDownloader:
+    """使用 pytube 的簡單下載器，更不容易被檢測為機器人"""
+    def __init__(self, temp_dir=None):
+        self.temp_dir = temp_dir or tempfile.mkdtemp()
+        Path(self.temp_dir).mkdir(parents=True, exist_ok=True)
+    
+    def download_video(self, url, quality="best", audio_only=False, download_id=None):
+        """使用 pytube 下載影片"""
+        try:
+            from pytube import YouTube
+            
+            if download_id:
+                download_status[download_id] = {
+                    'status': 'downloading',
+                    'progress': 0,
+                    'message': '正在使用 pytube 下載...',
+                    'file_path': None
+                }
+            
+            # 模擬人類行為延遲
+            time.sleep(random.uniform(1, 3))
+            
+            yt = YouTube(url)
+            
+            # 更新狀態
+            if download_id:
+                download_status[download_id].update({
+                    'progress': 20,
+                    'message': f'正在下載: {yt.title}',
+                    'title': yt.title,
+                    'duration': yt.length,
+                    'uploader': yt.author
+                })
+            
+            if audio_only:
+                stream = yt.streams.filter(only_audio=True).first()
+                if stream:
+                    safe_title = self._sanitize_filename(yt.title)
+                    filename = f"{safe_title}.mp3"
+                    file_path = os.path.join(self.temp_dir, filename)
+                    
+                    # 下載音訊
+                    downloaded_file = stream.download(output_path=self.temp_dir, filename=f"{safe_title}_temp")
+                    os.rename(downloaded_file, file_path)
+                    
+                    if download_id:
+                        download_status[download_id].update({
+                            'status': 'completed',
+                            'progress': 100,
+                            'message': '下載完成！',
+                            'file_path': file_path,
+                            'filename': filename
+                        })
+                    return True
+            else:
+                if quality == "best":
+                    stream = yt.streams.get_highest_resolution()
+                elif quality == "720p":
+                    stream = yt.streams.filter(res='720p', file_extension='mp4').first()
+                    if not stream:
+                        stream = yt.streams.filter(file_extension='mp4').first()
+                elif quality == "480p":
+                    stream = yt.streams.filter(res='480p', file_extension='mp4').first()
+                    if not stream:
+                        stream = yt.streams.filter(file_extension='mp4').first()
+                else:
+                    stream = yt.streams.get_highest_resolution()
+                
+                if stream:
+                    safe_title = self._sanitize_filename(yt.title)
+                    filename = f"{safe_title}.{stream.subtype}"
+                    file_path = os.path.join(self.temp_dir, filename)
+                    
+                    # 下載影片
+                    stream.download(output_path=self.temp_dir, filename=filename)
+                    
+                    if download_id:
+                        download_status[download_id].update({
+                            'status': 'completed',
+                            'progress': 100,
+                            'message': '下載完成！',
+                            'file_path': file_path,
+                            'filename': filename
+                        })
+                    return True
+            
+            return False
+            
+        except ImportError:
+            if download_id:
+                download_status[download_id] = {
+                    'status': 'error',
+                    'progress': 0,
+                    'message': 'pytube 未安裝，請執行: pip install pytube'
+                }
+            return False
+        except Exception as e:
+            error_msg = str(e)
+            if download_id:
+                download_status[download_id] = {
+                    'status': 'error',
+                    'progress': 0,
+                    'message': f'下載失敗: {error_msg}'
+                }
+            return False
+    
+    def _sanitize_filename(self, filename):
+        """清理檔案名稱"""
+        illegal_chars = r'[<>:"/\\|?*]'
+        safe_filename = re.sub(illegal_chars, '_', filename)
+        if len(safe_filename) > 200:
+            safe_filename = safe_filename[:200]
+        return safe_filename.strip()
 
 class YouTubeDownloader:
     def __init__(self, temp_dir=None):
@@ -282,6 +397,7 @@ def download():
         url = data.get('url', '').strip()
         quality = data.get('quality', 'best')
         audio_only = data.get('audio_only', False)
+        method = data.get('method', 'pytube')  # 預設使用 pytube
         
         if not url:
             return jsonify({'success': False, 'error': '請提供有效的 YouTube 連結'})
@@ -308,8 +424,21 @@ def download():
         
         # 在背景執行下載
         def background_download():
-            downloader = YouTubeDownloader()
-            downloader.download_video(url, quality, audio_only, download_id)
+            if method == 'pytube':
+                # 使用 pytube 方法
+                simple_downloader = SimpleYouTubeDownloader()
+                success = simple_downloader.download_video(url, quality, audio_only, download_id)
+                
+                # 如果 pytube 失敗，回退到 yt-dlp
+                if not success:
+                    if download_id:
+                        download_status[download_id]['message'] = '智能模式失敗，正在嘗試傳統模式...'
+                    downloader = YouTubeDownloader()
+                    downloader.download_video(url, quality, audio_only, download_id)
+            else:
+                # 直接使用 yt-dlp 方法
+                downloader = YouTubeDownloader()
+                downloader.download_video(url, quality, audio_only, download_id)
         
         thread = threading.Thread(target=background_download)
         thread.daemon = True
